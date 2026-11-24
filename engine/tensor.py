@@ -32,6 +32,20 @@ def _unbroadcast(grad: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
     return grad.reshape(shape)
 
 
+def _coerce(value: ArrayLike, dtype: np.dtype) -> "Tensor":
+    """Turn a constant into a Tensor of the same dtype as the other operand.
+
+    Without this, `x * 2.0` on a float32 tensor would silently promote the
+    whole expression to float64 and the precision study would be measuring
+    the wrong thing.
+    """
+    if isinstance(value, Tensor):
+        if value.data.dtype == dtype:
+            return value
+        return Tensor(value.data.astype(dtype), requires_grad=value.requires_grad)
+    return Tensor(np.asarray(value, dtype=dtype))
+
+
 class Tensor:
     """A dense array that remembers how it was computed."""
 
@@ -44,7 +58,10 @@ class Tensor:
         _children: tuple["Tensor", ...] = (),
         _op: str = "",
     ) -> None:
-        self.data = np.asarray(data, dtype=np.float64)
+        array = np.asarray(data)
+        if not np.issubdtype(array.dtype, np.floating):
+            array = array.astype(np.float64)
+        self.data = array
         self.grad = np.zeros_like(self.data)
         self.requires_grad = requires_grad
         self._prev = _children
@@ -110,7 +127,7 @@ class Tensor:
 
     # ----------------------------------------------------------- arithmetic
     def __add__(self, other: ArrayLike) -> "Tensor":
-        other = other if isinstance(other, Tensor) else Tensor(other)
+        other = _coerce(other, self.data.dtype)
         out = Tensor(self.data + other.data, _children=(self, other), _op="+")
 
         def _backward() -> None:
@@ -127,13 +144,13 @@ class Tensor:
         return self * -1.0
 
     def __sub__(self, other: ArrayLike) -> "Tensor":
-        return self + (-(other if isinstance(other, Tensor) else Tensor(other)))
+        return self + (-_coerce(other, self.data.dtype))
 
     def __rsub__(self, other: ArrayLike) -> "Tensor":
-        return (other if isinstance(other, Tensor) else Tensor(other)) + (-self)
+        return _coerce(other, self.data.dtype) + (-self)
 
     def __mul__(self, other: ArrayLike) -> "Tensor":
-        other = other if isinstance(other, Tensor) else Tensor(other)
+        other = _coerce(other, self.data.dtype)
         out = Tensor(self.data * other.data, _children=(self, other), _op="*")
 
         def _backward() -> None:
@@ -147,7 +164,7 @@ class Tensor:
         return self * other
 
     def __truediv__(self, other: ArrayLike) -> "Tensor":
-        other = other if isinstance(other, Tensor) else Tensor(other)
+        other = _coerce(other, self.data.dtype)
         out = Tensor(self.data / other.data, _children=(self, other), _op="/")
 
         def _backward() -> None:
@@ -160,7 +177,7 @@ class Tensor:
         return out
 
     def __rtruediv__(self, other: ArrayLike) -> "Tensor":
-        return (other if isinstance(other, Tensor) else Tensor(other)) / self
+        return _coerce(other, self.data.dtype) / self
 
     def __pow__(self, exponent: float) -> "Tensor":
         if not isinstance(exponent, (int, float)):
@@ -174,7 +191,7 @@ class Tensor:
         return out
 
     def __matmul__(self, other: ArrayLike) -> "Tensor":
-        other = other if isinstance(other, Tensor) else Tensor(other)
+        other = _coerce(other, self.data.dtype)
         if self.ndim < 2 or other.ndim < 2:
             raise ValueError("matmul requires tensors with ndim >= 2")
         out = Tensor(self.data @ other.data, _children=(self, other), _op="@")
@@ -189,7 +206,7 @@ class Tensor:
         return out
 
     def __rmatmul__(self, other: ArrayLike) -> "Tensor":
-        return (other if isinstance(other, Tensor) else Tensor(other)) @ self
+        return _coerce(other, self.data.dtype) @ self
 
     # ------------------------------------------------------------- reductions
     def sum(self, axis: int | None = None, keepdims: bool = False) -> "Tensor":

@@ -1,0 +1,4 @@
+sigmoid, depth 32    acc=0.500  vanishing  start= 3.2e-18  end= 3.4e-18  slope=-0.0019 dec/step  first layer receives no signal
+sigmoid + residual   acc=0.986  healthy    start= 5.9e-04  end= 1.1e-02  slope=+0.0029 dec/step  gradient reaches the first layer
+relu, depth 32       acc=0.994  healthy    start= 1.3e+00  end= 7.5e-01  slope=-0.0009 dec/step  gradient reaches the first layer
+relu + layernorm     acc=0.500  collapsing start= 1.6e-01  end= 1.5e-06  slope=-0.0100 dec/step  healthy at step 0, decays during training

@@ -49,11 +49,12 @@ class Linear(Module):
         bias: bool = True,
         init: str = "he_normal",
         rng: np.random.Generator | None = None,
+        dtype: np.dtype | str = np.float64,
     ) -> None:
         rng = rng or np.random.default_rng()
         scheme = init_module.get(init)
-        self.weight = Tensor(scheme((in_features, out_features), rng))
-        self.bias = Tensor(np.zeros(out_features)) if bias else None
+        self.weight = Tensor(scheme((in_features, out_features), rng).astype(dtype))
+        self.bias = Tensor(np.zeros(out_features, dtype=dtype)) if bias else None
         self.in_features = in_features
         self.out_features = out_features
         self.init = init
@@ -79,7 +80,7 @@ class Dropout(Module):
         if not self.training or self.p == 0.0:
             return x
         keep = (self.rng.random(x.shape) >= self.p) / (1.0 - self.p)
-        return x * Tensor(keep, requires_grad=False)
+        return x * Tensor(keep.astype(x.data.dtype), requires_grad=False)
 
 
 class Sequential(Module):

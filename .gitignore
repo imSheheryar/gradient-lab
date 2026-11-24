@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 figures/*.pdf
+
+# internal
+STATE.md
+launch/figures_cropped/

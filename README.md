@@ -1,5 +1,9 @@
 # gradient-lab
 
+[![tests](https://github.com/imSheheryar/gradient-lab/actions/workflows/tests.yml/badge.svg)](https://github.com/imSheheryar/gradient-lab/actions/workflows/tests.yml)
+[![license](https://img.shields.io/badge/license-MIT-12161C)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-2F6F73)](pyproject.toml)
+
 A reverse-mode autodiff engine written from scratch in NumPy, built as an instrument rather than a demo.
 
 The question: **how deep can a network get before the gradient dies, and which single intervention buys the most depth?**
@@ -152,3 +156,7 @@ No attention, no transformer, no C extension. Those are on the cut list, and the
 - [x] Session 2 — layers, initialisation schemes, optimisers, PyTorch parity, character-level LM
 - [x] Session 3 — the depth-horizon grid (720 runs), the width sweep, figures 2-4
 - [x] Session 4 — the probe, the float32 precision study, figures 5-6, this write-up
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Use it, break it, cite the numbers.

@@ -1,0 +1,31 @@
+𝐀 𝐬𝐢𝐧𝐠𝐥𝐞 𝐬𝐤𝐢𝐩 𝐜𝐨𝐧𝐧𝐞𝐜𝐭𝐢𝐨𝐧 𝐛𝐮𝐲𝐬 𝐦𝐨𝐫𝐞 𝐝𝐞𝐩𝐭𝐡 𝐭𝐡𝐚𝐧 𝐬𝐢𝐱𝐭𝐞𝐞𝐧 𝐭𝐢𝐦𝐞𝐬 𝐭𝐡𝐞 𝐰𝐢𝐝𝐭𝐡.
+
+I wrote a reverse-mode autodiff engine from scratch in NumPy — 17 operations, an explicit graph, a hand-written backward pass, 41 tests including gradient checks against finite differences and parity checks against PyTorch. No frameworks.
+
+Then I used it to answer one question properly: how deep can a network get before the gradient dies, and which single intervention buys the most depth?
+
+720 controlled runs. Four activations, three initialisations, normalisation and residuals on or off, five depths, three seeds. Same task, same optimiser, same budget, same width. Nothing varies except the thing being tested.
+
+What came out:
+
+→ A plain sigmoid network stops training between depth 8 and 16. At depth 32 it passes 1.1e-17 of the gradient to its first layer. Tanh, ReLU and GELU at the same depth sit at 0.90, 0.95 and 1.56.
+
+→ One residual connection takes the same sigmoid network from chance (0.500) to 0.994 at depth 32.
+
+→ Widening it from 8 to 128 units — sixteen times the parameters — does not move it off chance at all. At depths 16 and 32 it never leaves 0.500 at any width up to 128.
+
+So the exchange rate is real, and it is not the one the tutorials imply.
+
+Two things I did not expect, and kept because they make the claim stronger.
+
+The ReLU + LayerNorm network at depth 32 starts with a healthy gradient ratio of 0.16 and is at 1.5e-6 by step 250, with accuracy never leaving 0.500. A diagnostic that measures at step zero calls that run healthy. So the probe in the repo classifies trajectories — start level, end level, slope in decades per step — not snapshots.
+
+And the 1e-7 relative-error tolerance that gets quoted for gradient checks is a float64 claim. At float32 the same check tops out at 5.2e-5, and the analytical gradient already differs from the float64 truth by 8.8e-8 before finite differences are involved.
+
+The engine also trains: XOR from a hand-rolled SGD loop, and a character-level language model — 93,825 parameters, 6,000 Adam steps at 3.1 ms per step on one CPU core, loss 4.24 → 1.93 nats.
+
+Code, the 720-row CSV and every figure: https://github.com/imSheheryar/gradient-lab
+
+Swipe through for the six results. The README leads with the claim, not the setup.
+
+#MachineLearning #DeepLearning #NumPy #Autograd #Python #AIResearch #BuildInPublic

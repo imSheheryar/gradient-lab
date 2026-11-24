@@ -7,3 +7,5 @@ figures/*.pdf
 # internal
 STATE.md
 launch/figures_cropped/
+launch/pages/
+launch/serve.py

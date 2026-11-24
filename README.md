@@ -4,7 +4,7 @@ A reverse-mode autodiff engine written from scratch in NumPy, built as an instru
 
 The question this repository answers: **how deep can a network get before the gradient dies, and which single intervention buys the most depth?** The engine is the measuring device. Everything below exists so that the measurement can be trusted.
 
-Status: session 1 of 4 — the engine core is complete and verified.
+Status: session 2 of 4 — the engine and the library layer are complete and verified against PyTorch.
 
 ## Verified gradients
 
@@ -34,14 +34,36 @@ layernorm                         5.28e-10       33.89
 worst case: 8.26e-10   tolerance: 1.0e-06   PASS
 ```
 
-The worst case sits three orders of magnitude inside the tolerance, which is what float64 arithmetic on small tensors should give you. The interesting question — what happens to that floor at float32 — is the precision study in session 3.
+The worst case sits three orders of magnitude inside the tolerance, which is what float64 arithmetic on small tensors should give you. What happens to that floor at float32 is the precision study in session 3.
 
-## End-to-end check
+## Parity with PyTorch
 
-XOR is not linearly separable, so a two-layer network can only solve it if gradients flow through both hidden layers:
+Finite differences tell you the gradient is self-consistent. They do not tell you it is the *right* gradient. So every layer and optimiser is built a second time in PyTorch, fed identical parameters, and compared:
 
 ```
-$ python -m scripts.smoke_train
+component                         max abs diff
+----------------------------------------------
+linear forward                        0.00e+00
+linear grad wrt input                 0.00e+00
+linear grad wrt weight                0.00e+00
+linear grad wrt bias                  0.00e+00
+layernorm forward                     8.88e-16
+layernorm grad wrt input              1.42e-14
+layernorm grad wrt gamma              1.78e-15
+SGD + Nesterov, 5 steps               8.88e-16
+Adam, 5 steps                         2.78e-17
+AdamW, 5 steps                        0.00e+00
+----------------------------------------------
+worst deviation: 1.42e-14   tolerance 1e-12   PASS
+```
+
+Exact zeros are not suspicious: both implementations call the same BLAS routine on the same doubles. The 1e-14 in LayerNorm is the interesting one — it is the reduction order of the mean, and it is exactly the size you would predict from float64 rounding over four elements.
+
+## It learns
+
+XOR is not linearly separable, so a two-layer network can only solve it if gradients flow through both hidden layers.
+
+```
 step    0   loss 1.1839   accuracy 0.515
 step  150   loss 0.0214   accuracy 0.996
 step  600   loss 0.0128   accuracy 0.998
@@ -49,15 +71,27 @@ step  600   loss 0.0128   accuracy 0.998
 
 ![XOR decision boundary](figures/xor_decision_boundary.png)
 
+## It writes
+
+A character-level language model: eight characters of context, one-hot encoded, through a 160-unit tanh layer, predicting the next character. No embeddings, no attention — the point is to put the engine on a real workload.
+
+93,825 parameters, 6,000 Adam steps, 3.1 ms per step on one CPU core. Cross-entropy falls from 4.24 nats (uniform guessing over 65 characters) to 1.93, a perplexity of about 7.
+
+![Character-level language model](figures/char_lm.png)
+
+At step 0 the output is noise. At 600 it has learned word boundaries and syllable structure. At 6,000 it produces sentences that are grammatically shaped, semantically empty, and unmistakably Shakespeare-adjacent — which is exactly what an eight-character context window can buy you.
+
 ## Quickstart
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
-.venv/bin/python -m pytest -q          # 28 tests
-.venv/bin/python -m scripts.verify     # the table above
-.venv/bin/python -m scripts.smoke_train
+.venv/bin/python -m pytest -q              # 41 tests
+.venv/bin/python -m scripts.verify         # gradient table
+.venv/bin/python -m scripts.verify_parity  # PyTorch table
+.venv/bin/python -m scripts.smoke_train    # XOR
+.venv/bin/python -m scripts.char_lm        # language model
 ```
 
 ## Three decisions worth knowing about
@@ -75,6 +109,6 @@ No attention, no transformer, no C extension. Those are on the cut list, and the
 ## Roadmap
 
 - [x] Session 1 — Tensor, DAG, topological sort, fused softmax-CE, LayerNorm, gradcheck
-- [ ] Session 2 — Linear, Dropout, optimisers (SGD, momentum, Nesterov, Adam, AdamW), PyTorch parity suite
+- [x] Session 2 — Linear, Dropout, initialisation schemes, SGD/momentum/Nesterov/Adam/AdamW, PyTorch parity, character-level language model
 - [ ] Session 3 — the depth-horizon experiment and the precision study
 - [ ] Session 4 — figures, probe classifier, write-up

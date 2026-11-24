@@ -1,0 +1,6 @@
+relu	8	8
+relu	16	8
+relu	32	8
+sigmoid	8	16
+sigmoid	16	none
+sigmoid	32	none

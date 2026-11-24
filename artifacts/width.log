@@ -1,0 +1,10 @@
+nohup: ignoring input
+task: xor, 1600 points | grid 60 runs | 60 to do | steps 400
+[  10/60] sigmoid he_normal      none      res=0 w=16   d=16  seed=1  acc=0.500  13s elapsed, 63s left
+[  20/60] sigmoid he_normal      none      res=0 w=64   d=8   seed=1  acc=0.996  41s elapsed, 81s left
+[  30/60] sigmoid he_normal      none      res=0 w=128  d=32  seed=1  acc=0.500  132s elapsed, 132s left
+[  40/60] relu    he_normal      none      res=0 w=16   d=16  seed=1  acc=0.996  141s elapsed, 71s left
+[  50/60] relu    he_normal      none      res=0 w=64   d=8   seed=1  acc=0.996  158s elapsed, 32s left
+[  60/60] relu    he_normal      none      res=0 w=128  d=32  seed=1  acc=0.996  209s elapsed, 0s left
+
+wrote /home/ubuntu/projects/gradient-lab/artifacts/width_sweep.csv
